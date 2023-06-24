@@ -1,14 +1,9 @@
 import numpy as np
-
-from sklearn.exceptions import NotFittedError
-from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.base import BaseEstimator, ClassifierMixin, clone
 from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
 
 class SurvivalStacking(BaseEstimator, ClassifierMixin):
-    """
-    Stacking-based survival analysis classifier.
+    """Stacking-based survival analysis classifier.
 
     Parameters:
         base_models : list, optional
@@ -21,6 +16,8 @@ class SurvivalStacking(BaseEstimator, ClassifierMixin):
             List of base classification models.
         meta_model : object
             Meta-classification model.
+        meta_model_ : object
+            Fitted meta-classification model.
 
     """
 
@@ -29,14 +26,15 @@ class SurvivalStacking(BaseEstimator, ClassifierMixin):
         self.meta_model = meta_model
 
     def fit(self, X, y, base_models=None):
-        """
-        Fit the survival stacking model.
+        """Fit the survival stacking model.
 
         Parameters:
             X : array-like, shape (n_samples, n_features)
                 Input features for training.
             y : array-like, shape (n_samples,)
                 Binary outcome indicating whether an event occurred or not.
+            base_models : list, optional
+                List of base classification models for stacking. Default is None.
 
         Returns:
             self : object
@@ -59,13 +57,12 @@ class SurvivalStacking(BaseEstimator, ClassifierMixin):
         self.meta_model_ = clone(self.meta_model)
 
         # Fit the meta model using base models' predictions
-        self.meta_model.fit(meta_features, y)
+        self.meta_model_.fit(meta_features, y)
 
         return self
 
     def predict(self, X):
-        """
-        Predict using the survival stacking model.
+        """Predict using the survival stacking model.
 
         Parameters:
             X : array-like, shape (n_samples, n_features)
@@ -80,20 +77,19 @@ class SurvivalStacking(BaseEstimator, ClassifierMixin):
 
         """
         # Check if the model has been fitted
-        check_is_fitted(self)
+        check_is_fitted(self, 'meta_model_')
 
         # Validate input array X
         X = check_array(X)
 
         # Get base models' predictions and make ensemble predictions
         meta_features = self._get_base_model_predictions(X)
-        predictions = self.meta_model.predict(meta_features)
+        predictions = self.meta_model_.predict(meta_features)
 
         return predictions
 
     def set_meta_model(self, meta_model):
-        """
-        Set the meta-classification model.
+        """Set the meta-classification model.
 
         Parameters:
             meta_model : object
@@ -103,8 +99,7 @@ class SurvivalStacking(BaseEstimator, ClassifierMixin):
         self.meta_model = meta_model
 
     def set_base_models(self, base_models):
-        """
-        Set the base classification models.
+        """Set the base classification models.
 
         Parameters:
             base_models : list
@@ -114,8 +109,7 @@ class SurvivalStacking(BaseEstimator, ClassifierMixin):
         self.base_models = base_models
 
     def _get_base_model_predictions(self, X):
-        """
-        Get predictions from base models.
+        """Get predictions from base models.
 
         Parameters:
             X : array-like, shape (n_samples, n_features)
